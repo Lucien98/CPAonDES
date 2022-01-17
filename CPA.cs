@@ -18,10 +18,8 @@ public class CPA
     }
      public static void readTrs(String fileName, ref byte[][] plainTexts, ref byte[][] cipherTexts, ref Matrix<Double> dataTraces)
     {
-        //FileStream fileStream = new FileStream(@"E:\2021Fall\work\DES\CorrelationPowerAnalysis-master\traceset.trs", FileMode.Open);
         using (FileStream fs = new FileStream(fileName, FileMode.Open, FileAccess.Read))
         {
-            //byte[] buffer = new byte[fs.Length];
             byte[] bytebuffer = new byte[1];
             byte[] shortbuffer = new byte[2];
             byte[] intbuffer = new byte[4];
@@ -33,17 +31,15 @@ public class CPA
             int NT = BitConverter.ToInt32(intbuffer, 0);
             Console.WriteLine("Number of traces: {0}", NT);
             
-
             // get the number of sample points          
             fs.Seek(2, SeekOrigin.Current);
             fs.Read(intbuffer, 0, 4);
             int NS = BitConverter.ToInt32(intbuffer, 0);
             Console.WriteLine("Number of Sample points: {0}", NS);
-            //printBuffer(intbuffer);
-
+           
             fs.Seek(2, SeekOrigin.Current);
             fs.Read(bytebuffer, 0, 1);
-            //int sampleCoding = BitConverter.ToInt8(bytebuffer, 0);
+            
             if (bytebuffer[0] == 1)
             {
                 Console.WriteLine("every sample is coded in 1 byte");
@@ -58,7 +54,8 @@ public class CPA
             }
             else
             {
-                //exit(1);
+                Console.WriteLine("Invalid SampleCoding");
+                Environment.Exit(0);
             }
             byte[] samplebuffer = new byte[bytebuffer[0]];
 
@@ -75,9 +72,6 @@ public class CPA
                 cipherTexts[i] = new byte[8];
                 fs.Read(plainTexts[i], 0, 8);
                 fs.Read(cipherTexts[i], 0, 8);
-                //printBuffer(plainTexts[i]);
-                //printBuffer(cipherTexts[i]);
-                //if (i == 1) break;
                 for (j = 0; j < NS; j++)
                 {
                     fs.Read(samplebuffer, 0, 2);
@@ -238,7 +232,5 @@ public class CPA
         afterDT = System.DateTime.Now;
         ts = afterDT.Subtract(beforeDT);
         Console.WriteLine("find index using {0} s", ts);
-
-
     }
 }

@@ -223,7 +223,6 @@ namespace DES
 
         private static void FeistelCypher(Span<byte> messageBytes, IReadOnlyList<BitArray> subKeys, bool encrypt)
         {
-            printBytes(messageBytes);
             messageBytes.Reverse();
 
             var messageBits = new BitArray(64);
@@ -235,9 +234,6 @@ namespace DES
                     messageBits[i * 8 + j] = Convert.ToBoolean(messageByte >> j & 1);
                 }
             }
-            //var messagebytes = new byte[8];
-            //messageBits.CopyTo(messagebytes, 0);
-            printBitArray(messageBits);
             for (var i = 0; i < 64; i++)
             {
                 Console.WriteLine("{0} {1}", i, messageBits[i]);
@@ -249,8 +245,6 @@ namespace DES
                 left[31 - i] = messageBits[64 - IP[i]];
                 right[31 - i] = messageBits[64 - IP[i + 32]];
             }
-            printBitArray(left);
-            printBitArray(right);
             var temp = new BitArray(32);
             for (var i = 0; i < 16; i++)
             {
@@ -282,7 +276,6 @@ namespace DES
             messageBits.CopyTo(tempByteArray, 0);
             tempByteArray.CopyTo(messageBytes);
             messageBytes.Reverse();
-            printBytes(messageBytes);
         }
 
         private static void F(BitArray right, BitArray subKey)
@@ -292,7 +285,6 @@ namespace DES
             {
                 extended[47 - j] = right[32 - EP[j]];
             }
-            printBitArray(extended);
             var result = extended.Xor(subKey);
 
             var newRight = new BitArray(32);
@@ -364,9 +356,6 @@ namespace DES
             BitArray extractedBits = new BitArray(extrBitsNumber);
             for (var i = 0; i < indices.Length; i++)
             {
-                //Console.Write(length - indices[i]);
-                //Console.Write(" ");
-                //Console.WriteLine(bitArray[length - indices[i]]);
                 extractedBits[extrBitsNumber - 1 - i] = bitArray[length - indices[i]];
             }
             return extractedBits;
