@@ -26,59 +26,6 @@ void test_matrix_operation()
     Console.WriteLine();
     Console.WriteLine();
 }
-//test_matrix_operation();
-void cpa_main()
-{
-    //test_matrix_operation();
-    
-    DateTime dt1, dt2;
-    String fileName = @"E:\2021Fall\work\DES\CorrelationPowerAnalysis-master\traceset.trs";
-    //String fileName = @"E:\traceset500k.trs";
-    DateTime beforeDT;
-    DateTime afterDT;
-
-    beforeDT = DateTime.Now;
-    CPA.init(fileName);
-    afterDT = DateTime.Now;
-    TimeSpan ts; //= afterDT - beforeDT;
-
-    for (var i= 1; i < 9; i++)
-    {
-        
-        dt1 = DateTime.Now;
-        CPA.initDesHypothesis(i);
-        dt2 = DateTime.Now;
-        ts = dt1 - dt2;
-        Console.WriteLine("init hpythesi Eclapsed {0} s\n", ts);
-        
-        dt1 = DateTime.Now;
-        CPA.corRelate();
-        dt2 = DateTime.Now;
-        ts = dt1 - dt2;
-        Console.WriteLine("correlate Eclapsed {0} s\n\n\n",ts);
-
-    }
-}
-
-
-void testTrsWorker()
-{
-    String fileName = @"E:\2021Fall\work\DES\CorrelationPowerAnalysis-master\traceset.trs";
-    //String fileName = @"E:\traceset500k.trs";
-    TrsWorker trsWorker = new TrsWorker(fileName);
-    var plainTextsList = trsWorker.extractPlainTextsList(0,20000);
-    for(int i = 0; i < 10; i++)
-    {
-        Console.WriteLine(plainTextsList[i]);
-    }
-    var vec0 = trsWorker.extractNthTracePointsVec(0);
-    for(int i = 0; i < 10; i++)
-    {
-        Console.WriteLine(vec0[i]);
-    }
-    CPA.init(fileName);
-    CPA.test();
-}
 
 
 void testCPAv2()
