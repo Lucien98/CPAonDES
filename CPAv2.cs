@@ -29,8 +29,6 @@ public class CPAv2
     Vector<Double> ResAvarianceVec;
     Vector<Double> ResBvarianceVec;
     Matrix<Double> X;
-    //Vector<Double> A2;
-    //Vector<Double> B2;
     public CPAv2(String fileName)
     {
         trsWorker = new TrsWorker(fileName);
@@ -49,8 +47,6 @@ public class CPAv2
         ResAvarianceVec = Vector<Double>.Build.Dense(8 * blockSize);
         ResBvarianceVec = Vector<Double>.Build.Dense(NS);
         X = Matrix<Double>.Build.Dense(8*blockSize, NS);
-        //A2 = Vector<Double>.Build.Dense(8 * blockSize);
-        //B2 = Vector<Double>.Build.Dense(NS);
     }
 
 
@@ -203,25 +199,6 @@ public class CPAv2
         }
     }
 
-    public void computeCorrelationMatrix(string method)
-    {
-        int NS = trsWorker.getSampleNumber();
-        // size of correlationMatrix: 64 * numberOfSamples
-        //var tasks = new Task[NS];
-        correlationMatrix = Matrix<Double>.Build.Dense(hypothesis.ColumnCount, NS);
-        ////Console.WriteLine(hypothesis);
-        for (int i = 0; i < NS; i++)
-        {
-            //    var k = i;
-            //    //if (i % 100 == 0) Console.WriteLine("computing {0}th point...", i);
-            //    tasks[i] = Task.Run(() =>
-            //    {
-            computeSinglePointCorrelation(i, method);
-
-            //    });
-        }
-        //Task.WaitAll(tasks);
-    }
     public void analyse(string method)
     {
         DateTime beforeDT;
@@ -229,28 +206,13 @@ public class CPAv2
         TimeSpan ts;
 
         key = new byte[blockSize];
-        //plainTextsList = trsWorker.extractPlainTextsList();
-
+        
         for (int N = 1; N < blockSize + 1; N++)
-        //for (int N = 1; N < blockSize + 1; N++)
         {
-            //byte[] keyBytes = { 0x41, 0x7a, 0x8f, 0x9f, 0x6a, 0x2b, 0x1c, 0x7d };
-
-            //var subkeys = DES.DES.CreateSubKeys(keyBytes);
-            //Round1Key = subkeys[0];
-            //DES.DES.printBitArray(Round1Key);
             initMatrix();
             attackTracesNumber = 0;
             for (int round = 2; round <= 2; round++)
             {
-                //for (int i = 0; i < 1; i++)
-                //{
-                //    if (round == 1)
-                //    {
-                //        initDesHypothesis(N, round, method, 10000 * i, 10000);
-                //        continue;
-                //    }
-                //}
                 for (int i = 0; i < 1; i++)
                 {
                     Console.WriteLine(i);
@@ -267,9 +229,6 @@ public class CPAv2
                         correlate2(hypothesis2);
 
                 
-                    //dataTraces = trsWorker.extractNTracesMatrix(0, 20000);
-                    //correlate2();
-                    //computeCorrelationMatrix(method);
                     afterDT = System.DateTime.Now;
                     ts = afterDT.Subtract(beforeDT);
                     Console.WriteLine("init correlation matrix done! Elapsed {0} s", ts);
@@ -330,41 +289,5 @@ public class CPAv2
         Matrix<Double> Z = AvarianceVec.ToColumnMatrix() * BvarianceVec.ToRowMatrix();
         Z = Z.PointwiseSqrt();
         return (X-Y).PointwiseDivide(Z);
-    }
-    public void corRelate()
-    {
-        correlationMatrix = Matrix<Double>.Build.Dense(hypothesis.ColumnCount, dataTraces.ColumnCount);
-        DateTime beforeDT;
-        DateTime afterDT;
-        TimeSpan ts;
-
-        int i = 0, j = 0;
-        foreach (var hypCol in hypothesis.EnumerateColumns())
-        {
-            j = 0;
-            beforeDT = DateTime.Now;
-            foreach (var dtCol in dataTraces.EnumerateColumns())
-            {
-                beforeDT = System.DateTime.Now;
-
-                correlationMatrix[i, j] = Correlation.Pearson(hypCol, dtCol);
-                j++;
-                afterDT = System.DateTime.Now;
-                ts = afterDT.Subtract(beforeDT);
-                if (i == 0 && j == 0) Console.WriteLine("compute solumn mean using {0} s", ts);
-            }
-            i++;
-            afterDT = System.DateTime.Now;
-
-            ts = afterDT.Subtract(beforeDT);
-            if (i == 1) Console.WriteLine("compute solumn mean using {0} s", ts);
-        }
-        var max = Statistics.MaximumAbsolute(correlationMatrix.Enumerate());
-        foreach (var col in correlationMatrix.EnumerateColumns())
-        {
-            if (col.AbsoluteMaximum() == max)
-                Console.WriteLine("{0:X2}", col.AbsoluteMaximumIndex());
-        }
-        Console.WriteLine(max);
     }
 }

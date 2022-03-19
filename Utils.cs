@@ -40,8 +40,4 @@ public class Utils
         return buffer;
     }
 
-    //public static byte[] BitArrayToByte(BitArray bitArray)
-    //{
-
-    //}
 }

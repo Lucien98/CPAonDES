@@ -79,13 +79,8 @@ namespace DES
         {
 
         };
-        //public static byte[] getMKFromR1Key()
-        //{
-
-        //}
         public static void mapRoundKeyBits(int round)
         {
-            //int roundbak = round;
             byte[] keyBitsMap = new byte[48];
             while (round > 0)
             {
@@ -131,18 +126,6 @@ namespace DES
             {
                 masterKey[64 - R1KeyMap[i]] = subkey[47 - i];
             }
-            //for(int i = 0;i < 64; i++)
-            //{
-            //    int flag = 0;
-            //    for(int j = 0; j < 48; j++)
-            //    {
-            //        if(i+1 == R1KeyMap[j]) flag = 1;
-            //    }
-            //    if(flag == 0 && ((i+1) % 8 !=0))
-            //    {
-            //        Console.WriteLine(i+1);
-            //    }
-            //}
             for(int i = 0;i < 256; i++)
             {
                 masterKey[64 - 6]  =Convert.ToBoolean( i >> 0 & 1);
