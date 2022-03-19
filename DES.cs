@@ -64,6 +64,119 @@ namespace DES
             34, 53, 46, 42, 50, 36, 29, 32
         };
 
+        private static readonly byte[] R1KeyMap =
+        {
+            10, 51, 34, 60, 49, 17,
+            33, 57, 2, 9, 19, 42,
+            3, 35, 26, 25, 44, 58,
+            59, 1, 36, 27, 18, 41,
+            22, 28, 39, 54, 37, 4,
+            47, 30, 5, 53, 23, 29,
+            61, 21, 38, 63, 15, 20,
+            45, 14, 13, 62, 55, 31
+        };
+        private static readonly byte[] R2KeyMap =
+        {
+
+        };
+        //public static byte[] getMKFromR1Key()
+        //{
+
+        //}
+        public static void mapRoundKeyBits(int round)
+        {
+            //int roundbak = round;
+            byte[] keyBitsMap = new byte[48];
+            while (round > 0)
+            {
+                for (int i = 0; i < 48; i++)
+                {
+                    keyBitsMap[i] = CP[i];
+                    keyBitsMap[i] += ShiftBits[round - 1];
+                    if (i < 24)
+                    {
+                        keyBitsMap[i] %= 28;
+                        if (keyBitsMap[i] == 0) keyBitsMap[i] = 28;
+                    }
+                    else
+                    {
+                        keyBitsMap[i] %= 56;
+                        if (keyBitsMap[i] == 0) keyBitsMap[i] = 56;
+                        if (keyBitsMap[i] < 28) keyBitsMap[i] += 28;
+                    }
+                }
+                round--;
+            }
+            for (int i = 0; i < 48; i++)
+            {
+
+                if (i < 24)
+                {
+                    keyBitsMap[i] = K1P[keyBitsMap[i] - 1];
+                    Console.Write("{0}, ", keyBitsMap[i]);
+                    if((i+1)%6 == 0) Console.WriteLine();
+                }
+                else
+                {
+                    keyBitsMap[i] = K2P[keyBitsMap[i] - 29];
+                    Console.Write("{0}, ", keyBitsMap[i]);
+                    if ((i + 1) % 6 == 0) Console.WriteLine();
+                }
+            }
+        }
+        public static void getKeyFromSubkey(BitArray subkey, byte[] plainText, byte[] cipherText)
+        {
+            var masterKey = new BitArray(64);
+            for(int i =0; i < 48; i++)
+            {
+                masterKey[64 - R1KeyMap[i]] = subkey[47 - i];
+            }
+            //for(int i = 0;i < 64; i++)
+            //{
+            //    int flag = 0;
+            //    for(int j = 0; j < 48; j++)
+            //    {
+            //        if(i+1 == R1KeyMap[j]) flag = 1;
+            //    }
+            //    if(flag == 0 && ((i+1) % 8 !=0))
+            //    {
+            //        Console.WriteLine(i+1);
+            //    }
+            //}
+            for(int i = 0;i < 256; i++)
+            {
+                masterKey[64 - 6]  =Convert.ToBoolean( i >> 0 & 1);
+                masterKey[64 - 7]  =Convert.ToBoolean( i >> 1 & 1);
+                masterKey[64 - 11] =Convert.ToBoolean( i >> 2 & 1);
+                masterKey[64 - 12] =Convert.ToBoolean( i >> 3 & 1);
+                masterKey[64 - 43] =Convert.ToBoolean( i >> 4 & 1);
+                masterKey[64 - 46] =Convert.ToBoolean( i >> 5 & 1);
+                masterKey[64 - 50] =Convert.ToBoolean( i >> 6 & 1);
+                masterKey[64 - 52] =Convert.ToBoolean( i >> 7 & 1);
+
+                byte[] keybytes = new byte[8];
+                masterKey.CopyTo(keybytes, 0);
+                Array.Reverse(keybytes);
+                printBytes(keybytes);
+                var desCiphertext = Des(plainText.AsSpan(), keybytes, true);
+                printBytes(desCiphertext);
+                Console.WriteLine();
+                int flag = 0;
+
+                for (int j = 0; j < 8; j++)
+                {
+                    if(cipherText[j] != desCiphertext[j]) flag = 1;
+                }
+                if (flag == 0)
+                {
+                    Array.Reverse(keybytes);
+                    printBytes(keybytes);
+                    break;
+                }
+            }
+
+        }
+
         private static readonly byte[] EP = {
             32, 1, 2, 3, 4, 5, 4, 5,
             6, 7, 8, 9, 8, 9, 10, 11,
@@ -160,13 +273,12 @@ namespace DES
             return enlargedMessage;
         }
 
-        private static byte[] Des(ReadOnlySpan<byte> originalMessage, byte[] keyBytes, bool encrypt)
+        public static byte[] Des(ReadOnlySpan<byte> originalMessage, byte[] keyBytes, bool encrypt)
         {
             var messageBytes = EnlargeMessage(originalMessage);
             var numOfParts = messageBytes.Length / 8;
 
             var subKeys = CreateSubKeys(keyBytes);
-
             var tasks = new Task[numOfParts];
 
             for (var i = 0; i < numOfParts; i++)
@@ -183,8 +295,9 @@ namespace DES
             return messageBytes;
         }
 
-        private static BitArray[] CreateSubKeys(byte[] keyBytes)
+        public static BitArray[] CreateSubKeys(byte[] keyBytes)
         {
+            /*printBytes(keyBytes);*/
             Array.Reverse(keyBytes);
             var keyBits = new BitArray(keyBytes);
             var left = new bool[28];
@@ -216,6 +329,10 @@ namespace DES
                 }
 
                 subKeys[i] = subKey;
+                /*
+                Console.WriteLine("第{0}轮密钥：", i);
+                printBitArray(subKey);
+                */
             }
 
             return subKeys;
@@ -227,17 +344,17 @@ namespace DES
 
             var messageBits = new BitArray(64);
             for (var i = 0; i < 8; i++)
-            {
-                var messageByte = messageBytes[i];
+            {    
                 for (var j = 0; j < 8; j++)
                 {
-                    messageBits[i * 8 + j] = Convert.ToBoolean(messageByte >> j & 1);
+                    var messageByte = messageBytes[i];
+                        messageBits[i * 8 + j] = Convert.ToBoolean(messageByte >> j & 1);
                 }
             }
-            for (var i = 0; i < 64; i++)
-            {
-                Console.WriteLine("{0} {1}", i, messageBits[i]);
-            }
+            /*
+            Console.WriteLine("明文：");
+            printBitArray(messageBits);
+            */
             var left = new BitArray(32);
             var right = new BitArray(32);
             for (var i = 0; i < 32; i++)
@@ -245,6 +362,11 @@ namespace DES
                 left[31 - i] = messageBits[64 - IP[i]];
                 right[31 - i] = messageBits[64 - IP[i + 32]];
             }
+            /*
+            Console.WriteLine("经过IP之后的L和R");
+            printBitArray(left);
+            printBitArray(right);
+            */
             var temp = new BitArray(32);
             for (var i = 0; i < 16; i++)
             {
@@ -254,28 +376,47 @@ namespace DES
                 }
 
                 var subKey = encrypt ? subKeys[i] : subKeys[15 - i];
+                //if (i == 0) printBitArray(subKey);
                 F(right, subKey);
                 right = right.Xor(left);
-
                 (left, temp) = (temp, left);
+                var leftRightr = new BitArray(64);
+                for (var j = 0; j < 32; j++)
+                {
+                    leftRightr[j + 32] = left[j];
+                    leftRightr[j] = right[j];
+                }
+                /*
+                Console.WriteLine("第{0}轮的结果", i + 1);
+                printBitArray(left);
+                printBitArray(right);
+                */
+
             }
 
             var leftRight = new BitArray(64);
             for (var i = 0; i < 32; i++)
             {
+                // In fact, this exchanges the left and right result of round 16 since the small endian
+                // DES is big endian
                 leftRight[i] = left[i];
                 leftRight[i + 32] = right[i];
             }
-
             for (var i = 0; i < 64; i++)
             {
                 messageBits[63 - i] = leftRight[64 - FP[i]];
             }
-
+            /*
+            Console.WriteLine("初始逆置换：");
+            printBitArray(messageBits);
+            */
             var tempByteArray = new byte[8];
             messageBits.CopyTo(tempByteArray, 0);
             tempByteArray.CopyTo(messageBytes);
             messageBytes.Reverse();
+            /*
+            printBytes(messageBytes);
+            */
         }
 
         private static void F(BitArray right, BitArray subKey)
@@ -330,25 +471,6 @@ namespace DES
             int index = (input & 30) >> 1;
             return SBox[sboxNumber-1, select, index];
         }
-        public static void printBytes(Span<Byte> spanByte)
-        {
-            //Console.WriteLine(spanByte.Length);
-            for (var i = 0; i < spanByte.Length; i++)
-            {
-                Console.Write("{0:X2}", spanByte[i]);
-
-            }
-            Console.WriteLine();
-        }
-        public static void printBitArray(BitArray bitArray)
-        {
-            var length = bitArray.Length / 8;
-            if(length == 0) length = 1;
-            byte[] bytes = new byte[length];
-            bitArray.CopyTo(bytes, 0);
-            //bytes.Reverse();
-            printBytes(bytes);
-        }
         public static BitArray extract(BitArray bitArray, byte[] indices)
         {
             var length = bitArray.Length;
@@ -360,7 +482,10 @@ namespace DES
             }
             return extractedBits;
         }
-
+        /*
+         * plainText: 0xABCD == 0b1010 1011 1100 1101
+         * messageBits: 0xB3D5 == 0b1011 0011 1101 0101
+         */
         public static BitArray IPTrans(byte[] plainText)
         {
             var messageBits = new BitArray(64);
@@ -400,113 +525,123 @@ namespace DES
             }
             return indices;
         }
-        public static BitArray getIPL(byte[] plainText)
+        public static BitArray getIPL(byte[] plainText, int round)
         {
             var messageBits = IPTrans(plainText);
             var left = new BitArray(32);
             for (var i = 0; i < 32; i++)
             {
-                left[31 - i] = messageBits[64 - IP[i]];
+                if (round == 1)
+                    left[31 - i] = messageBits[64 - IP[i]];
+                else
+                    left[31 - i] = messageBits[63 - i];
             }
             return left;
         }
-        public static BitArray getIPR(byte[] plainText)
+        public static BitArray getIPR(byte[] plainText, int round)
         {
             var messageBits = IPTrans(plainText);
             var right = new BitArray(32);
             for (var i = 0; i < 32; i++)
             {
-                right[31 - i] = messageBits[64 - IP[i + 32]];
+                if (round == 1)
+                    right[31 - i] = messageBits[64 - IP[i + 32]];
+                else
+                    right[31 - i] = messageBits[31-i];
             }
             return right;
         }
+        public static void printBytes(Span<Byte> spanByte)
+        {
+            for (var i = 0; i < spanByte.Length; i++)
+            {
+                Console.Write("{0:X2}", spanByte[i]);
 
+            }
+            Console.WriteLine();
+        }
+        public static void printBitArray(BitArray bitArray)
+        {
+            var length = bitArray.Length / 8;
+            if (length == 0) length = 1;
+            byte[] bytes = new byte[length];
+            bitArray.CopyTo(bytes, 0);
+            Array.Reverse(bytes);
+            printBytes(bytes);
+        }
+
+        public static String get1stRoundResWithSubKey1(BitArray subKey, byte[] plainText)
+        {
+            var messageBits = IPTrans(plainText);
+            var left = new BitArray(32);
+            var right = new BitArray(32);
+            for (var i = 0; i < 32; i++)
+            {
+                left[31 - i] = messageBits[64 - IP[i]];
+                right[31 - i] = messageBits[64 - IP[i + 32]];
+            }
+            
+            var temp = new BitArray(32);
+            for (var j = 0; j < 32; j++)
+            {
+                temp[j] = right[j];
+            }
+            F(right, subKey);
+            right = right.Xor(left);
+
+            (left, temp) = (temp, left);
+            var leftRight = new BitArray(64);
+            for (var i = 0; i < 32; i++)
+            {
+                leftRight[i + 32] = left[i];
+                leftRight[i] = right[i];
+            }
+
+            byte[] plainTextBytes = new byte[leftRight.Length / 8];
+            leftRight.CopyTo(plainTextBytes, 0);
+            Array.Reverse(plainTextBytes);
+            return Utils.ByteArrayToHexString(plainTextBytes);
+        }
         public static void testDES()
         {
             byte[] plainText = { 0x5c, 0x91, 0x5e, 0x6c, 0x61, 0x6a, 0xa0, 0xf2 };
             byte[] keyBytes = { 0x41, 0x7a, 0x8f, 0x9f, 0x6a, 0x2b, 0x1c, 0x7d };
-            Des(plainText.AsSpan(), keyBytes, true);
+            //byte[] plainText = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+            //byte[] keyBytes = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+            //byte[] keyBytes = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+            //byte[] plainText = { 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef };
+            //byte[] keyBytes = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 };
+            //byte[] plainText = { 0x90, 0x26, 0x40, 0x00, 0x69, 0xe9, 0x7e, 0xdd };
+            //byte[] keyBytes = { 0xc7, 0x90, 0x8f, 0x99, 0x74, 0x66, 0x2a, 0xed };
+            //plainText.AsSpan()
+            var cipherText = Des(plainText.AsSpan(), keyBytes, true);
+            printBytes(cipherText);
             
         }
-        public static void printWithHeader(String info)
-        {
-            Console.WriteLine();
-            Console.WriteLine();
-            Console.WriteLine("------------------------------------------------------------------------------------");
-            Console.WriteLine("-                      {0}", info);
-            Console.WriteLine("------------------------------------------------------------------------------------");
-        }
-        public static void test(byte[] plainText)
-        {
-            Utils.printBuffer(plainText);
-            var messageBits = IPTrans(plainText);
-            Utils.printBuffer(plainText);
-            printBitArray(messageBits);
 
-            var left = new BitArray(32);
-            var right = new BitArray(32);
-            for (var i = 0; i < 32; i++)
-            {
-                left[31 - i] = messageBits[64 - IP[i]];
-                right[31 - i] = messageBits[64 - IP[i + 32]];
-            }
-            printBitArray(left);
-            printBitArray(right);
-
-        }
-        public static void main()
+        public static void getSubkeys()
         {
-            printWithHeader("standard implementation");
-            testDES();
-
-            printWithHeader("implemanted by myself");
-            byte[] plainText = { 0x5c, 0x91, 0x5e, 0x6c, 0x61, 0x6a, 0xa0, 0xf2 };
             byte[] keyBytes = { 0x41, 0x7a, 0x8f, 0x9f, 0x6a, 0x2b, 0x1c, 0x7d };
-            byte[] cipherText = { 0x54, 0x1f, 0x8d, 0x5c, 0x94, 0x47, 0x83, 0x9c };
-            
-
-            var messageBits = IPTrans(plainText);
-            printBitArray(messageBits);
-            var left = new BitArray(32);
-            var right = new BitArray(32);
-            for (var i = 0; i < 32; i++)
+            var subKeys = CreateSubKeys(keyBytes);
+            printBitArray(subKeys[0]);
+            printBitArray(subKeys[1]);
+            byte[,] subKeyBytes = new byte[2,8];
+            byte[] copiedByte = new byte[1];
+            BitArray partialKey = new BitArray(6);
+            for (int i = 0; i < 2; i++)
             {
-                left[31 - i] = messageBits[64 - IP[i]];
-                right[31 - i] = messageBits[64 - IP[i + 32]];
-            }
-
-            printBitArray(left);
-            printBitArray(right);
-            
-            printBitArray(getIPL(plainText));
-            printBitArray(getIPR(plainText));
-
-            var extended = new BitArray(48);
-            for (var j = 0; j < 48; j++)
-            {
-                extended[47 - j] = right[32 - EP[j]];
-            }
-            //the result extended is little endian
-            //while the printBitArray shows a big endian result
-            printBitArray(extended);
-            
-            var subKey = new BitArray(6);
-            byte keyCandidate = 39;
-            for (var i = 0; i < 6; i++)
-            {
-                subKey[5 - i] = Convert.ToBoolean(keyCandidate >> i & 1);
-            }
-
-            byte[] indices = new byte[6];
-            BitArray exSin = new BitArray(6);
-            for(var j = 0; j < 8; j++)
-            {
-                for (var i = 0; i < 6; i++)
+                for(int j = 0;j < 8; j++)
                 {
-                    indices[i] = (byte) (j*6 + i+1);
+                    for (int k = 0; k < 6; k++)
+                    {
+                        partialKey[k] = subKeys[i][j*6 + k];
+                    }
+                    partialKey.CopyTo(copiedByte, 0);
+                    subKeyBytes[i,j] = copiedByte[0];
+                    Console.Write("{0:X2}, ", subKeyBytes[i,j]);
                 }
-                exSin = extract(extended, indices);
-                printBitArray(exSin);
+                Console.WriteLine();
             }
 
         }
